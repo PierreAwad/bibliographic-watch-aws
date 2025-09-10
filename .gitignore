@@ -205,3 +205,19 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# --- AWS & Cloud ---
+# AWS credentials/config (NEVER push your keys!)
+.aws/
+*.pem
+*.ppk
+
+# Terraform / CDK / SAM build files
+*.tfstate
+*.tfstate.backup
+cdk.out/
+*.template.json
+
+# Local config
+*.secrets
+*.key
