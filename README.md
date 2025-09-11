@@ -26,6 +26,23 @@ The goal is to build a cloud-native application to automatically process, store,
 
 ---
 
+## 🏗️ Architecture
+
+```mermaid
+flowchart LR
+    A[arXiv API] --> B[Lambda: arxiv_to_s3]
+    B --> S3raw[(S3: raw metadata)]
+    B --> Qpdf[(SQS: PDF queue)]
+
+    Qpdf --> C[Lambda: fetch_pdf]
+    C --> S3pdf[(S3: PDF storage)]
+    C --> Qtext[(SQS: Text queue)]
+
+    Qtext --> D[Lambda: pdf_to_text]
+    D --> S3text[(S3: Extracted text)]
+    D --> DDB[(DynamoDB: Metadata + snippet)]
+```
+
 ## 🛠️ Tech Stack
 - **AWS**: S3, Lambda, DynamoDB, SQS, Textract, Glue, Athena  
 - **Python**: data processing and orchestration  
