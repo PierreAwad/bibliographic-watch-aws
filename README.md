@@ -127,3 +127,14 @@ Uses **Textract** by default and falls back to **PyPDF2** if Textract does not s
   }
 }
 ```
+---
+
+## 🙋 About Me
+I am an **Application Engineer in Analytical Chemistry** (GC/GC-MS) exploring **cloud computing and AI** to build practical tools for data analysis and automation.  
+This project is part of my path toward the **AWS Data Engineer – Associate certification** and my broader portfolio of applied AI/cloud solutions.
+
+---
+
+## ⚠️ Disclaimer
+This is an **educational project**. Code is experimental and subject to change.  
+Please do not use in production without proper review and testing.
