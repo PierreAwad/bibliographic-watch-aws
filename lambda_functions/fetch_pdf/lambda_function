@@ -1,0 +1,48 @@
+import os, json, urllib.request
+from datetime import datetime, timezone
+import boto3
+
+S3_BUCKET     = os.environ["S3_BUCKET"]
+TEXT_Q_URL    = os.environ["TEXT_QUEUE_URL"]
+
+s3  = boto3.client("s3")
+sqs = boto3.client("sqs")
+
+def download_pdf(url):
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(req, timeout=60) as resp:
+        data = resp.read()
+        if not data.startswith(b"%PDF"):
+            raise ValueError("Fichier récupéré non valide (pas un PDF)")
+        return data
+
+def lambda_handler(event, context):
+    for record in event.get("Records", []):
+        try:
+            body = json.loads(record["body"])
+            pdf_url = body["url_pdf"]
+            paper_id = body["id"]
+
+            # Télécharger le PDF
+            pdf_bytes = download_pdf(pdf_url)
+
+            # Sauvegarder dans S3 (clé unique)
+            key = f"pdf/arxiv/{paper_id}.pdf"
+            s3.put_object(Bucket=S3_BUCKET, Key=key, Body=pdf_bytes, ContentType="application/pdf")
+
+            # Envoyer message vers text-queue
+            msg = {
+                "source": "arxiv",
+                "id": paper_id,
+                "s3_pdf_key": key,
+                "metadataMin": body.get("metadataMin", {})
+            }
+            sqs.send_message(QueueUrl=TEXT_Q_URL, MessageBody=json.dumps(msg))
+
+            print(f"[OK] PDF sauvegardé : {key}")
+
+        except Exception as e:
+            print(f"[ERROR] record failed: {e}")
+            continue
+
+    return {"ok": True, "processed": len(event.get('Records', []))}
