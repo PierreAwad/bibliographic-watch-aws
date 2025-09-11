@@ -94,3 +94,34 @@ Once stored, it sends a message to another SQS queue (`TEXT_QUEUE_URL`) for down
   }
 }
 ```
+### pdf_to_text
+Extracts text content from PDFs stored in S3 and saves both the plain text (in S3) and structured metadata (in DynamoDB).  
+Uses **Textract** by default and falls back to **PyPDF2** if Textract does not support the document.
+
+**Workflow:**
+1. Reads messages from `TEXT_QUEUE_URL` containing `id`, `s3_pdf_key`, and minimal metadata.  
+2. Downloads the PDF from S3.  
+3. Normalizes the file (using PyPDF2).  
+4. Runs AWS Textract for text extraction (fallback to PyPDF2 if unsupported).  
+5. Stores extracted text in S3 under `text/arxiv/<date>/<id>.txt`.  
+6. Inserts or updates a record in DynamoDB with metadata, S3 keys, and a snippet of extracted text.  
+
+**Environment variables:**
+- `S3_BUCKET`: Target bucket where PDFs and extracted text are stored  
+- `DDB_TABLE`: DynamoDB table name for storing metadata and extracted text  
+- `TEXT_PREFIX`: S3 prefix for extracted text (default: `text/arxiv`)  
+- `MAX_TEXT_LENGTH`: Maximum number of characters from the extracted text stored in DynamoDB (default: `1000`)  
+
+**Sample SQS message input:**
+```json
+{
+  "source": "arxiv",
+  "id": "2502.13183v1",
+  "s3_pdf_key": "pdf/arxiv/2502.13183v1.pdf",
+  "metadataMin": {
+    "title": "Generative autoencoders for GC-IMS data",
+    "authors": ["Author One", "Author Two"],
+    "published_at": "2025-02-13T00:00:00Z"
+  }
+}
+```
