@@ -35,7 +35,7 @@ The goal is to build a cloud-native application to automatically process, store,
 
 ## 📅 Roadmap
 - [x] Lambda to fetch and filter arXiv metadata  
-- [ ] Store PDFs in S3  
+- [x] Store PDFs in S3  
 - [ ] Text extraction (Textract + PyPDF2 fallback)  
 - [ ] DynamoDB integration  
 - [ ] Athena queries  
