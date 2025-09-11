@@ -1,0 +1,119 @@
+import os, json, boto3
+from datetime import datetime, timezone
+from PyPDF2 import PdfReader, PdfWriter
+import io
+from botocore.exceptions import ClientError
+
+# Environnements
+S3_BUCKET = os.environ["S3_BUCKET"]
+DDB_TABLE = os.environ["DDB_TABLE"]
+TEXT_PREFIX = os.environ.get("TEXT_PREFIX", "text/arxiv")
+MAX_TEXT_LENGTH = int(os.environ.get("MAX_TEXT_LENGTH", "1000"))
+
+# Clients AWS
+s3 = boto3.client("s3")
+ddb = boto3.resource("dynamodb")
+textract = boto3.client("textract")
+table = ddb.Table(DDB_TABLE)
+
+# --- Fonction de normalisation PDF
+def normalize_pdf(pdf_bytes):
+    try:
+        reader = PdfReader(io.BytesIO(pdf_bytes))
+        writer = PdfWriter()
+        for page in reader.pages:
+            writer.add_page(page)
+        buf = io.BytesIO()
+        writer.write(buf)
+        print("[INFO] PDF normalisé avec PyPDF2")
+        return buf.getvalue()
+    except Exception as e:
+        print(f"[WARN] Normalisation échouée : {e}")
+        return pdf_bytes  # fallback sur l’original
+
+# --- Extraction brute avec PyPDF2 (fallback si Textract échoue)
+def extract_with_pypdf2(pdf_bytes):
+    try:
+        reader = PdfReader(io.BytesIO(pdf_bytes))
+        text = ""
+        for page in reader.pages:
+            text += page.extract_text() or ""
+        print("[FALLBACK] Extraction avec PyPDF2 réussie")
+        return text.strip()
+    except Exception as e:
+        print(f"[ERROR] Fallback PyPDF2 échoué : {e}")
+        return ""
+
+# --- Handler Lambda
+def lambda_handler(event, context):
+    processed = 0
+
+    for record in event.get("Records", []):
+        body = json.loads(record["body"])
+        paper_id = body["id"]
+        pdf_key = body["s3_pdf_key"]
+        metadata = body.get("metadataMin", {})
+
+        try:
+            # --- 1) Télécharger le PDF depuis S3
+            obj = s3.get_object(Bucket=S3_BUCKET, Key=pdf_key)
+            pdf_bytes = obj["Body"].read()
+
+            # --- 2) Normaliser le PDF
+            pdf_bytes = normalize_pdf(pdf_bytes)
+
+            # --- 3) Essayer Textract
+            try:
+                response = textract.detect_document_text(
+                    Document={"Bytes": pdf_bytes}
+                )
+                lines = [
+                    block["Text"]
+                    for block in response["Blocks"]
+                    if block["BlockType"] == "LINE"
+                ]
+                text = "\n".join(lines)
+                print(f"[OK] Textract terminé pour {paper_id}")
+
+            except ClientError as e:
+                if e.response["Error"]["Code"] == "UnsupportedDocumentException":
+                    print(f"[WARN] Textract non supporté pour {paper_id}, fallback PyPDF2")
+                    text = extract_with_pypdf2(pdf_bytes)
+                else:
+                    raise
+
+            # --- 4) Sauvegarder le texte dans S3
+            now = datetime.now(timezone.utc)
+            text_key = f"{TEXT_PREFIX}/{now:%Y/%m/%d}/{paper_id}.txt"
+            s3.put_object(
+                Bucket=S3_BUCKET,
+                Key=text_key,
+                Body=text.encode("utf-8"),
+                ContentType="text/plain"
+            )
+
+            # --- 5) Sauvegarder dans DynamoDB
+            item = {
+                "id": paper_id,
+                "title": metadata.get("title"),
+                "authors": metadata.get("authors", []),
+                "published_at": metadata.get("published_at"),
+                "s3_pdf_key": pdf_key,
+                "s3_text_key": text_key,
+                "extracted_text": text[:MAX_TEXT_LENGTH],
+                "textract_status": "ok" if text else "empty"
+            }
+            table.put_item(Item=item)
+
+            processed += 1
+
+        except Exception as e:
+            print(f"[ERROR] {paper_id} -> {e}")
+            # Log minimal en cas d'échec
+            table.put_item(Item={
+                "id": paper_id,
+                "s3_pdf_key": pdf_key,
+                "textract_status": f"failed: {e}"
+            })
+
+    return {"ok": True, "processed": processed}
