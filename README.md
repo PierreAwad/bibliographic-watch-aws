@@ -94,6 +94,8 @@ Once stored, it sends a message to another SQS queue (`TEXT_QUEUE_URL`) for down
   }
 }
 ```
+---
+
 ### pdf_to_text
 Extracts text content from PDFs stored in S3 and saves both the plain text (in S3) and structured metadata (in DynamoDB).  
 Uses **Textract** by default and falls back to **PyPDF2** if Textract does not support the document.
