@@ -17,10 +17,11 @@ The goal is to build a cloud-native application to automatically process, store,
 ## 🗂️ Current Status
 - ✅ Project skeleton created  
 - ✅ First Lambda implemented: **arxiv_to_s3** (ingest metadata from arXiv)  
-- ⏳ Next steps:  
-  - Store PDFs in S3  
-  - Extract text (Textract + PyPDF2 fallback)  
-  - Structure metadata in DynamoDB  
+- ✅ Store PDFs in S3  
+- ✅ Extract text (Textract + PyPDF2 fallback) 
+- ✅ Extract text (Textract + PyPDF2 fallback) 
+- ✅ Structure metadata in DynamoDB
+- ⏳ Next steps:
   - Query with Athena  
   - Build dashboards in QuickSight  
 
@@ -53,8 +54,8 @@ flowchart LR
 ## 📅 Roadmap
 - [x] Lambda to fetch and filter arXiv metadata  
 - [x] Store PDFs in S3  
-- [ ] Text extraction (Textract + PyPDF2 fallback)  
-- [ ] DynamoDB integration  
+- [x] Text extraction (Textract + PyPDF2 fallback)  
+- [x] DynamoDB integration  
 - [ ] Athena queries  
 - [ ] QuickSight dashboards  
 - [ ] Automated summaries with LLMs (ChatGPT / Bedrock)  
