@@ -65,6 +65,32 @@ Also sends PDF download instructions to SQS for downstream processing.
 {
   "query": "all:chromatography AND all:deep learning"
 }
-
+```
 ---
 
+### fetch_pdf
+Downloads article PDFs from arXiv (based on messages sent to SQS by `arxiv_to_s3`) and stores them in S3.  
+Once stored, it sends a message to another SQS queue (`TEXT_QUEUE_URL`) for downstream text extraction.
+
+**Workflow:**
+1. Reads messages from `PDF_QUEUE_URL` containing `id`, `url_pdf`, and minimal metadata.  
+2. Downloads the PDF file from arXiv.  
+3. Stores it in S3 under `pdf/arxiv/<paper_id>.pdf`.  
+4. Sends a new message to `TEXT_QUEUE_URL` with the S3 key for the PDF.  
+
+**Environment variables:**
+- `S3_BUCKET`: Target bucket where PDFs are stored  
+- `TEXT_QUEUE_URL`: SQS queue used to send messages for text extraction  
+
+**Sample SQS message input:**
+```json
+{
+  "id": "2502.13183v1",
+  "url_pdf": "https://arxiv.org/pdf/2502.13183v1.pdf",
+  "metadataMin": {
+    "title": "Generative autoencoders for GC-IMS data",
+    "authors": ["Author One", "Author Two"],
+    "published_at": "2025-02-13T00:00:00Z"
+  }
+}
+```
