@@ -68,27 +68,3 @@ Also sends PDF download instructions to SQS for downstream processing.
 
 ---
 
-⚙️ Environment Variables
-
-The Lambda functions are configured using the following environment variables:
-
-Variable	Example	Description
-S3_BUCKET	my-biblio-bucket	Target S3 bucket where raw metadata is stored
-PDF_QUEUE_URL	https://sqs.<region>.amazonaws.com/<account-id>/pdf-queue	SQS queue used to send PDF download instructions
-ARXIV_MAX_RESULTS	25	Maximum number of results per query (default: 25)
-ARXIV_QUERY	(all:"chromatography" AND (all:"machine learning" OR all:"cloud computing" OR all:"aws"))	Main search query for arXiv
-KEYWORDS_ANALYTICAL	gc-ms;gcms;gas chromatography mass spectrometry;lc-ms;proteomics;metabolomics	Analytical chemistry keywords
-KEYWORDS_APPLICATIONS	biomarkers;clinical chemistry;precision medicine;environmental analysis;food analysis	Application domain keywords
-KEYWORDS_CLOUD	aws;amazon web services;azure;microsoft azure;gcp;google cloud;athena;glue;emr;spark	Cloud & AI keywords
-
----
-
-## 🙋 About Me
-I am an **Application Engineer in Analytical Chemistry** (GC/GC-MS) exploring **cloud computing and AI** to build practical tools for data analysis and automation.  
-This project is part of my path toward the **AWS Data Engineer – Associate certification** and my broader portfolio of applied AI/cloud solutions.
-
----
-
-## ⚠️ Disclaimer
-This is an **educational project**. Code is experimental and subject to change.  
-Please do not use in production without proper review and testing.
