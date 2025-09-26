@@ -18,8 +18,8 @@ The goal is to build a cloud-native application to automatically process, store,
 - ✅ Project skeleton created  
 - ✅ First Lambda implemented: **arxiv_to_s3** (ingest metadata from arXiv)  
 - ✅ Store PDFs in S3  
-- ✅ Extract text (Textract + PyPDF2 fallback) 
-- ✅ Extract text (Textract + PyPDF2 fallback) 
+- ✅ Extract text (Textract + PyPDF2 fallback)
+- ✅ Generate LLM-based literature reviews
 - ✅ Structure metadata in DynamoDB
 - ⏳ Next steps:
   - Query with Athena  
@@ -58,7 +58,7 @@ flowchart LR
 - [x] DynamoDB integration  
 - [ ] Athena queries  
 - [ ] QuickSight dashboards  
-- [ ] Automated summaries with LLMs (ChatGPT / Bedrock)  
+- [x] Automated summaries with LLMs (ChatGPT / Bedrock)
 
 ---
 
@@ -115,7 +115,7 @@ Once stored, it sends a message to another SQS queue (`TEXT_QUEUE_URL`) for down
 ---
 
 ### pdf_to_text
-Extracts text content from PDFs stored in S3 and saves both the plain text (in S3) and structured metadata (in DynamoDB).  
+Extracts text content from PDFs stored in S3 and saves both the plain text (in S3) and structured metadata (in DynamoDB).
 Uses **Textract** by default and falls back to **PyPDF2** if Textract does not support the document.
 
 **Workflow:**
@@ -143,6 +143,35 @@ Uses **Textract** by default and falls back to **PyPDF2** if Textract does not s
     "authors": ["Author One", "Author Two"],
     "published_at": "2025-02-13T00:00:00Z"
   }
+}
+```
+---
+
+### generate_review
+Creates a synthetic literature review document by orchestrating ChatGPT over the articles already processed and indexed in DynamoDB.
+The generated review is stored in S3 for later consultation.
+
+**Workflow:**
+1. Retrieves the latest articles (or a provided list of IDs) from DynamoDB.
+2. Loads the associated text snippets from S3.
+3. Builds a structured prompt consolidating metadata and content snippets.
+4. Calls ChatGPT (configurable via `OPENAI_MODEL`) to produce a French summary with recommendations.
+5. Stores the generated review in S3 under the `reviews/` prefix as JSON.
+
+**Environment variables:**
+- `S3_BUCKET`: Bucket storing article assets and review outputs.
+- `DDB_TABLE`: DynamoDB table containing article metadata.
+- `OPENAI_API_KEY`: API key used to invoke ChatGPT.
+- `OPENAI_MODEL`: Optional, model name (default: `gpt-4o-mini`).
+- `MAX_REVIEW_ARTICLES`: Optional, maximum number of articles to summarise (default: `5`).
+- `REVIEW_PREFIX`: Optional, S3 prefix where the review JSON is written (default: `reviews`).
+- `OPENAI_TEMPERATURE`: Optional, sampling temperature (default: `0.3`).
+
+**Sample event JSON:**
+```json
+{
+  "paper_ids": ["2502.13183v1", "2502.14567v1"],
+  "limit": 3
 }
 ```
 ---
