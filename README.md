@@ -1,4 +1,4 @@
-# Bibliographic Watch Tool (AWS-based)
+# Bibliographic Watch – Automated Scientific Literature Pipeline (GitHub)
 
 🚧 **Work in Progress** 🚧  
 This repository contains the initial skeleton of a **bibliographic watch tool** I am developing as part of my learning journey in **AWS Data Engineering**.  
